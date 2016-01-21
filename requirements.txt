@@ -1,0 +1,4 @@
+Flask
+Flask-API==0.6.4
+flask_negotiate
+rdflib==4.2.0

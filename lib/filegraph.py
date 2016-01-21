@@ -20,8 +20,6 @@ class FileGraph:
         return
 
     def addstatement(self, statement, rdfserialization):
-        print('Versuche folgende Daten als ' + rdfserialization + ' zu importieren.')
-        print(statement.decode('UTF-8'))
         self.graph.parse(data=statement.decode('UTF-8'), format=rdfserialization)
         return
 
@@ -38,10 +36,17 @@ class FileGraph:
         f.write( self.content.decode('UTF-8'))
         f.close
 
-        print('File saved')
+    def getcontexts(self):
+        return self.graph.context()
 
-    def getgraphobject(self):
-        return self.graph
+    def getresource(self, subjecturi):
+        subject = rdflib.term.URIRef(subjecturi)
+        return self.graph.triples((subject, None, None))
+
+    def dumpgraph(self, graphuri):
+        contextgraph = self.graph.get_context(graphuri)
+        result = contextgraph.serialize(format='nt')
+        return result.decode('UTF-8')
 
     def query(self, querystring, context='default'):
         if context == 'default':

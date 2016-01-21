@@ -1,11 +1,5 @@
-from flask import request, url_for, Flask, Response
+from flask import request, Flask, Response
 from flask_negotiate import consumes, produces
-from flask.ext.api import status #, exceptions, FlaskAPI
-#from flask.ext.api.decorators import set_parsers, set_renderers
-#from flask.ext.api.parsers import JSONParser, BaseParser
-#from flask.ext.api.renderers import JSONRenderer
-#from flask.ext.api import renderers
-#from lib.misc import TrigParser, TurtleParser, NquadsParser, TurtleRenderer, NquadsRenderer
 import lib.filegraph as fg
 import rdflib
 from  lib import handleexit
@@ -20,8 +14,8 @@ importformats = {'text/html' : 'html',
         'application/rdf+xml':'rdf'
     }
 
-exportformats = {'text/html' : 'html',
-        'application/n-quads':'nquads',
+exportformats = {
+        'text/plain':'nt',
     }
 
 # command line parameters
@@ -42,8 +36,8 @@ parser.add_argument('-i', '--input', default='guess', choices=[
         'turtle',
         'xml'
     ], help='Optional input format')
+
 args = parser.parse_args()
-global fi
 fi =os.path.abspath(args.file)
 
 if args.input == 'guess':
@@ -52,7 +46,6 @@ else:
     fo = args.input
 
 # new graph
-global g
 g = fg.FileGraph(fi, fo)
 
 #app = FlaskAPI(__name__)
@@ -63,18 +56,8 @@ def savegraph(path):
     print('Saving graph')
     g.savefile(path)
 
-def __dumpgraph(resourceuri):
-    query = ' CONSTRUCT { ?s ?p ?o .}'
-    query+= ' WHERE { ?s ?p ?o } '
-
-    result = g.query(query, resourceuri)
-
-    print('Dump-Result')
-    content = ''
-    for row in result:
-        print(row)
-
-    return content
+def __dumpgraph(graphuri):
+    return g.dumpgraph(graphuri)
 
 def __getresource(resourceuri):
     query = ' SELECT ?s ?p ?o WHERE { '
@@ -94,7 +77,9 @@ def __resourceexists(resourceuri):
 
 def __resourceisgraphuri(resourceuri):
     query = ' ASK {graph <' + resourceuri + '> { ?s ?p ?o } } '
+    print(query)
     result = g.query(query)
+    print(result)
 
     return bool(result)
 
@@ -115,45 +100,53 @@ def index(path):
     '''
     List last commits.
     '''
-    print('MediaType: ' + str(request.environ['CONTENT_TYPE']))
-    print('Accept: ' + str(request.environ['HTTP_ACCEPT']))
-
-    print(__dumpgraph('http://127.0.0.1:5000/hier/kommt/json/geflogen/3'))
+    triples = g.getresource(request.url)
+    print('Triples')
+    for triple in triples:
+        print(triple)
 
     if request.method == 'POST' or request.method == 'PUT':
+        # we have to write data
         if request.environ['CONTENT_TYPE'] not in importformats:
-            resp = Response(js, status=404)
-            return resp
-
-        # tage url and add all statements that cotain url as resource uri
-        if __resourceexists(request.url) == True:
-            return 'Could not insert data. Resource ' + request.url + ' allready exists.'
-        if __resourceisgraphuri(request.url) == True:
-            return 'Could not insert data. A graph with URI ' + request.url + ' allready exists.'
-
-        #result = __getgraph('http://127.0.0.1:5000/hier/kommt/json/geflogen/3')
-        print('Das hier habe ich empfangen: ')
-        print(str(request.data.decode('UTF-8')))
-
-        __addstatement(request.data, importformats[request.environ['CONTENT_TYPE']])
-        savegraph(fi)
-
-        return 'Cool ein POST-Request kam an, du wolltest Path: ' + path, status.HTTP_201_CREATED
-    elif request.method == 'GET':
-        if __resourceexists(request.url) == False:
+            print('Content-Type ' + request.environ + ' not supported')
             resp = Response(status=404)
             return resp
-        # act as a linked data endpoint
+
+        # but not if the resource already exists
+        if __resourceexists(request.url) == True:
+            print('Could not insert data. Resource \"' + request.url + '\" allready exists.')
+            resp = Response(status=404)
+            return resp
+
+        # and if the resource already exists as a graph
         if __resourceisgraphuri(request.url) == True:
-            data = __dumpgraph(request.url), status.HTTP_201_CREATED
-            resp = Response(data, status=404, mimetype='application/n-triples')
-        else:
-            data = __getresource(request.url), status.HTTP_201_CREATED
-            resp = Response(data, status=404, mimetype='application/n-triples')
+            print('Could not insert data. A graph with URI \"' + request.url + '\" allready exists.')
+            resp = Response(status=404)
+            return resp
+
+        # write
+        __addstatement(request.data, importformats[request.environ['CONTENT_TYPE']])
+        resp = Response(status=200)
+
+        # and save
+        # TODO: if exithandler will work, there is no need to save after every input
+        savegraph(fi)
         return resp
-    #elif request.method == 'PUT':
-        # do something
-    #    return 'Cool, ein PUT-Request kam an, du wolltest Path: ' + path, status.HTTP_201_CREATED
+
+    elif request.method == 'GET':
+        if __resourceisgraphuri(request.url) == True:
+            print('Resource ist Graph, dumpe ganzen Graph')
+            data = __dumpgraph(request.url)
+            resp = Response(data, status=200, mimetype='text/plain')
+        elif __resourceexists(request.url) == True:
+            print('Resource gefunden, hier kommt sie')
+            data = __getresource(request.url)
+            resp = Response(data, status=200, mimetype='text/plain')
+        else:
+            print('Resource nicht gefunden')
+            resp = Response(status=404)
+
+        return resp
 
 def main():
     app.run(debug=True)

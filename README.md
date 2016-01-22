@@ -2,8 +2,8 @@
 
 For tests build a local docker image and run the container
 ```
-docker build  -t "ldowback" .
-docker Drun --name=ldow -p port:80 ldowback:latest
+docker build  -t "resourcehosting" .
+docker run --name=resourcehosting -p port:80 resourcehosting:latest
 ```
 with "port" being an unused port of your host.
 

@@ -37,4 +37,4 @@ EXPOSE 80
 
 ENV RDF_SER nquads
 ENV GRAPH_FILE /data/graph.nq
-CMD /opt/ldow/ldowapi.py $GRAPH_FILE --input $RDF_SER
+CMD /opt/ldow/ldowapi.py $GRAPH_FILE --input $RDF_SER --port 80 --host 0.0.0.0

@@ -18,12 +18,14 @@ importformats = {'text/html' : 'html',
 
 exportformats = {
         'application/n-quads':'nquads',
-        'text/plain':'nt',
+        #'text/plain':'nt',
     }
 
 # command line parameters
 parser = argparse.ArgumentParser()
 parser.add_argument('file')
+parser.add_argument('--host', default='127.0.0.1', type=str)
+parser.add_argument('-p', '--port', default=5000, type=int)
 parser.add_argument('-i', '--input', default='guess', choices=[
         'html',
         'hturtle',
@@ -120,15 +122,15 @@ def index(path):
             print('Resource existiert und ein Graph ebenfalls')
             data = g.dumpgraph(url)
             data+= g.getresource(url)
-            resp = Response(data, status=200, mimetype='text/plain')
+            resp = Response(data, status=200, mimetype='application/n-quads')
         elif resourceisgraphuri:
             print('Resource ist Graph, dumpe ganzen Graph')
             data = g.dumpgraph(request.url)
-            resp = Response(data, status=200, mimetype='text/plain')
+            resp = Response(data, status=200, mimetype='application/n-quads')
         elif resourceexists:
             print('Resource ' + request.url + ' gefunden, hier kommt sie')
             data = g.getresource(request.url)
-            resp = Response(data, status=200, mimetype='text/plain')
+            resp = Response(data, status=200, mimetype='application/n-quads')
         else:
             print('Resource ' + request.url + ' nicht gefunden')
             resp = Response(status=404)
@@ -147,11 +149,11 @@ def getnextresourceuri():
         resource = request.url_root + urihash
         if __resourceexists(resource) == False:
             data = ('url', dn)
-            resp = Response(json.dumps({'nexthash':urihash, 'nexturl':resource}), status=200)
+            resp = Response(json.dumps({'nexthash':urihash, 'nexturl':resource}), status=200, mimetype='application/json')
             return resp
 
 def main():
-    app.run(debug=True, port=80)
+    app.run(debug=True, host=args.host, port=args.port)
 
 if __name__ == '__main__':
     with handleexit.handle_exit(__savegraph(fi)):

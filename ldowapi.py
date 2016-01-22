@@ -54,8 +54,8 @@ else:
 g = fg.FileGraph(fi, fo)
 
 #app = FlaskAPI(__name__)
-app = Flask(__name__)
-cors = CORS(app)
+app = Flask(__name__, static_url_path='')
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 def __savegraph(path):
@@ -153,7 +153,7 @@ def getnextresourceuri():
             return resp
 
 def main():
-    app.run(debug=True, host=args.host, port=args.port)
+    app.run(host=args.host, port=args.port)
 
 if __name__ == '__main__':
     with handleexit.handle_exit(__savegraph(fi)):

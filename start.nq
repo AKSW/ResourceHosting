@@ -1,0 +1,11 @@
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk5> <http://example.com/Predicate> <http://example.com/Test6> <http://127.0.0.1:5000/hier/kommt/json/geflogen/3> .
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk2> <http://example.com/Predicate> <http://example.com/Test6> <http://127.0.0.1:5000/hier/kommt/json/geflogen/3> .
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk2> <http://example.com/Predicate> <http://example.com/Test7> <http://127.0.0.1:5000/hier/kommt/json/geflogen/3> .
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk2> <http://example.com/Predicate> <http://example.com/Test8> <http://127.0.0.1:5000/hier/kommt/json/geflogen/3> .
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk2> <http://example.com/Predicate> "was ist los" <http://127.0.0.1:5000/hier/kommt/json/geflogen/3> .
+<http://127.0.0.1:5000/subject1> <http://example.com/Predicate> <http://example.com/Test2> <http://example.com/nocheingraph/> .
+<http://ex.com/subject2> <http://ex.com/predicate2> <http://ex.com/object2> <http://ex.com/graph2> .
+<http://ex.com/subject> <http://ex.com/predicate> <http://ex.com/object> <http://ex.com/graph> .
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk5> <http://example.com/Predicate> <http://example.com/Test6> <http://127.0.0.1:5000/hier/kommt/json/geflogen/5> .
+<http://127.0.0.1:5000/hier/kommt/json/geflogenk2> <http://example.com/Predicate> <http://example.com/Test6> <http://127.0.0.1:5000/hier/kommt/json/geflogen/5> .
+

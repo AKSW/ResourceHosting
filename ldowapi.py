@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from flask import request, Flask, Response
 from flask_negotiate import consumes, produces
 from flask.ext.cors import CORS
@@ -150,7 +151,7 @@ def getnextresourceuri():
             return resp
 
 def main():
-    app.run(debug=True)
+    app.run(debug=True, port=80)
 
 if __name__ == '__main__':
     with handleexit.handle_exit(__savegraph(fi)):

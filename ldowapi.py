@@ -1,10 +1,11 @@
 from flask import request, Flask, Response
 from flask_negotiate import consumes, produces
+from flask.ext.cors import CORS
 import lib.filegraph as fg
 import rdflib
 from  lib import handleexit
 import argparse
-import os
+import os, hashlib, time, json
 
 importformats = {'text/html' : 'html',
         'text/n3':'n3',
@@ -15,6 +16,7 @@ importformats = {'text/html' : 'html',
     }
 
 exportformats = {
+        'application/n-quads':'nquads',
         'text/plain':'nt',
     }
 
@@ -50,24 +52,12 @@ g = fg.FileGraph(fi, fo)
 
 #app = FlaskAPI(__name__)
 app = Flask(__name__)
+cors = CORS(app)
 
 
-def savegraph(path):
+def __savegraph(path):
     print('Saving graph')
     g.savefile(path)
-
-def __dumpgraph(graphuri):
-    return g.dumpgraph(graphuri)
-
-def __getresource(resourceuri):
-    query = ' SELECT ?s ?p ?o WHERE { '
-    query+= '   ?s ?p ?o . '
-    query+= '   <' + resourceuri + ' ?p ?o . '
-    query+= ' } '
-
-    result = g.query(query)
-
-    return result
 
 def __resourceexists(resourceuri):
     query = ' ASK { <' + resourceuri + '> ?p ?o . } '
@@ -77,16 +67,9 @@ def __resourceexists(resourceuri):
 
 def __resourceisgraphuri(resourceuri):
     query = ' ASK {graph <' + resourceuri + '> { ?s ?p ?o } } '
-    print(query)
     result = g.query(query)
-    print(result)
 
     return bool(result)
-
-def __addstatement(statement, serialization=''):
-    g.addstatement(statement, serialization)
-
-    return
 
 '''
 API
@@ -94,16 +77,13 @@ API
 
 @app.route("/", defaults={'path': ''})
 @app.route('/<path:path>', methods=['POST', 'GET', 'PUT'])
-#@set_parsers(JSONParser, TurtleParser, TrigParser, NquadsParser)
-#@set_renderers(JSONRenderer, TurtleRenderer, NquadsRenderer)
 def index(path):
     '''
     List last commits.
     '''
-    triples = g.getresource(request.url)
-    print('Triples')
-    for triple in triples:
-        print(triple)
+    url                = request.url
+    resourceisgraphuri = __resourceisgraphuri(url)
+    resourceexists     = __resourceexists(url)
 
     if request.method == 'POST' or request.method == 'PUT':
         # we have to write data
@@ -113,44 +93,65 @@ def index(path):
             return resp
 
         # but not if the resource already exists
-        if __resourceexists(request.url) == True:
+        if resourceexists:
             print('Could not insert data. Resource \"' + request.url + '\" allready exists.')
             resp = Response(status=404)
             return resp
 
         # and if the resource already exists as a graph
-        if __resourceisgraphuri(request.url) == True:
+        if resourceisgraphuri:
             print('Could not insert data. A graph with URI \"' + request.url + '\" allready exists.')
             resp = Response(status=404)
             return resp
 
         # write
-        __addstatement(request.data, importformats[request.environ['CONTENT_TYPE']])
-        resp = Response(status=200)
+        g.addstatement(request.data, importformats[request.environ['CONTENT_TYPE']])
+        resp = Response(status=201)
 
         # and save
         # TODO: if exithandler will work, there is no need to save after every input
-        savegraph(fi)
+        __savegraph(fi)
         return resp
 
     elif request.method == 'GET':
-        if __resourceisgraphuri(request.url) == True:
-            print('Resource ist Graph, dumpe ganzen Graph')
-            data = __dumpgraph(request.url)
+        #
+        if resourceisgraphuri and resourceexists:
+            print('Resource existiert und ein Graph ebenfalls')
+            data = g.dumpgraph(url)
+            data+= g.getresource(url)
             resp = Response(data, status=200, mimetype='text/plain')
-        elif __resourceexists(request.url) == True:
-            print('Resource gefunden, hier kommt sie')
-            data = __getresource(request.url)
+        elif resourceisgraphuri:
+            print('Resource ist Graph, dumpe ganzen Graph')
+            data = g.dumpgraph(request.url)
+            resp = Response(data, status=200, mimetype='text/plain')
+        elif resourceexists:
+            print('Resource ' + request.url + ' gefunden, hier kommt sie')
+            data = g.getresource(request.url)
             resp = Response(data, status=200, mimetype='text/plain')
         else:
-            print('Resource nicht gefunden')
+            print('Resource ' + request.url + ' nicht gefunden')
             resp = Response(status=404)
 
         return resp
+
+@app.route("/nextresource", methods=['GET'])
+def getnextresourceuri():
+    dn = request.url_root
+    m = hashlib.sha1()
+    while True:
+        now = str(time.time())
+        m.update(now.encode('UTF-8'))
+        urihash = m.hexdigest()[:32]
+        print(urihash)
+        resource = request.url_root + urihash
+        if __resourceexists(resource) == False:
+            data = ('url', dn)
+            resp = Response(json.dumps({'nexthash':urihash, 'nexturl':resource}), status=200)
+            return resp
 
 def main():
     app.run(debug=True)
 
 if __name__ == '__main__':
-    with handleexit.handle_exit(savegraph(fi)):
+    with handleexit.handle_exit(__savegraph(fi)):
         main()

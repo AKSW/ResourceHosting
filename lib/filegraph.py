@@ -32,7 +32,6 @@ class FileGraph:
         f = open(path, "w")
 
         self.content = self.graph.serialize(format="nquads")
-        print('Content: ', self.content.decode('UTF-8'))
         f.write( self.content.decode('UTF-8'))
         f.close
 
@@ -41,7 +40,11 @@ class FileGraph:
 
     def getresource(self, subjecturi):
         subject = rdflib.term.URIRef(subjecturi)
-        return self.graph.triples((subject, None, None))
+        triples = self.graph.triples((subject, None, None))
+        data = ''
+        for triple in triples:
+            data+= triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n'
+        return data
 
     def dumpgraph(self, graphuri):
         contextgraph = self.graph.get_context(graphuri)

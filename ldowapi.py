@@ -8,10 +8,14 @@ from  lib import handleexit
 import argparse
 import os, hashlib, time, json
 
+# TODO: jquery ajax requests always get a 'charset=UTF-8' entry as Content-Type
 importformats = {'text/html' : 'html',
         'text/n3':'n3',
+        'application/n-triples':'nquads',
+        'application/n-triples; charset=UTF-8':'nquads',
         'application/n-quads':'nquads',
-        'text/plain':'nt',
+        'application/n-quads; charset=UTF-8':'nquads',
+        'text/plain; charset=UTF-8':'nt',
         'application/turtle':'turtle',
         'application/rdf+xml':'rdf'
     }
@@ -54,12 +58,11 @@ else:
 g = fg.FileGraph(fi, fo)
 
 #app = FlaskAPI(__name__)
-app = Flask(__name__, static_url_path='')
+app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 def __savegraph(path):
-    print('Saving graph')
     g.savefile(path)
 
 def __resourceexists(resourceuri):
@@ -85,6 +88,7 @@ def index(path):
     List last commits.
     '''
     url                = request.url
+    print('URL', url)
     resourceisgraphuri = __resourceisgraphuri(url)
     resourceexists     = __resourceexists(url)
 
@@ -118,10 +122,12 @@ def index(path):
 
     elif request.method == 'GET':
         #
+        print('GET empfangen')
         if resourceisgraphuri and resourceexists:
             print('Resource existiert und ein Graph ebenfalls')
             data = g.dumpgraph(url)
             data+= g.getresource(url)
+            data+= g.getobject(url)
             resp = Response(data, status=200, mimetype='application/n-quads')
         elif resourceisgraphuri:
             print('Resource ist Graph, dumpe ganzen Graph')
@@ -137,7 +143,9 @@ def index(path):
 
         return resp
 
-@app.route("/nextresource", methods=['GET'])
+
+#@app.route("/nextresource", methods=['GET'])
+@app.route("/", methods=['GET'])
 def getnextresourceuri():
     dn = request.url_root
     m = hashlib.sha1()

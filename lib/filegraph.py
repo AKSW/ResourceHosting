@@ -27,8 +27,6 @@ class FileGraph:
         return self.graph.context_id(resource)
 
     def savefile(self, path):
-        print('Saving graph ', path)
-
         f = open(path, "w")
 
         self.content = self.graph.serialize(format="nquads")
@@ -40,7 +38,15 @@ class FileGraph:
 
     def getresource(self, subjecturi):
         subject = rdflib.term.URIRef(subjecturi)
-        triples = self.graph.triples((subject, None, None))
+        triples = self.graph.quads((subject, None, None))
+        data = ''
+        for triple in triples:
+            data+= triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n'
+        return data
+
+    def getobject(self, objecturi):
+        object = rdflib.term.URIRef(subjecturi)
+        triples = self.graph.quads((None, None, Object))
         data = ''
         for triple in triples:
             data+= triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n'

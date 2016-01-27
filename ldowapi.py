@@ -162,10 +162,10 @@ def index(path):
             data+= g.getobject(url, serialization)
         elif resourceisgraphuri:
             print('Graph = URL')
-            data+= g.dumpgraph(request.url, serialization)
+            data+= g.dumpgraph(url, serialization)
         elif resourceexists:
             print('Resource = URL')
-            data+= g.getresource(request.url)
+            data+= g.getresource(url, serialization)
             data+= g.getobject(url, serialization)
         else:
             resp = Response(status=404)

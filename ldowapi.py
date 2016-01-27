@@ -80,7 +80,7 @@ def __resourceexists(resourceuri):
     return bool(result)
 
 def __objectexists(objecturi):
-    query = ' ASK { ?s ?p <' + resourceuri + '> . } '
+    query = ' ASK { ?s ?p <' + objecturi + '> . } '
     result = g.query(query)
 
     return bool(result)
@@ -189,7 +189,7 @@ def getnextresourceuri():
         urihash = m.hexdigest()[:32]
         print(urihash)
         resource = request.url_root + urihash
-        if __resourceexists(resource) == False and __objectexists(resour) == False:
+        if __resourceexists(resource) == False and __objectexists(resource) == False:
             data = ('url', dn)
             resp = Response(json.dumps({'nexthash':urihash, 'nexturl':resource}), status=200, mimetype='application/json')
             return resp

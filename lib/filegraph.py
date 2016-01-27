@@ -45,8 +45,8 @@ class FileGraph:
         return data
 
     def getobject(self, objecturi):
-        object = rdflib.term.URIRef(subjecturi)
-        triples = self.graph.quads((None, None, Object))
+        object = rdflib.term.URIRef(objecturi)
+        triples = self.graph.quads((None, None, object))
         data = ''
         for triple in triples:
             data+= triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n'

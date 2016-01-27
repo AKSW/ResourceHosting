@@ -28,9 +28,9 @@ exportformats = {
     }
 
 mimetypes = {
-        'nquads':'applcation/n-quads',
-        'xml':'applcation/rdf+xml',
-        'nt':'applcation/n-triples',
+        'nquads':'application/n-quads',
+        'xml':'application/rdf+xml',
+        'nt':'application/n-triples',
 }
 
 # command line parameters
@@ -74,13 +74,13 @@ def __savegraph(path):
     g.savefile(path)
 
 def __resourceexists(resourceuri):
-    query = ' ASK { <' + resourceuri + '> ?p ?o . } '
+    query = ' ASK { ?s ?p ?o . FILTER(STRSTARTS(STR(?s), \"' + resourceuri + '\" )) } '
     result = g.query(query)
 
     return bool(result)
 
 def __objectexists(objecturi):
-    query = ' ASK { ?s ?p <' + objecturi + '> . } '
+    query = ' ASK { ?s ?p ?o . FILTER(STRSTARTS(STR(?o), \"' + objecturi + '\" )) } '
     result = g.query(query)
 
     return bool(result)

@@ -1,2 +1,2 @@
-<http://localhost/example> <http://www.w3.org/2000/01/rdf-schema#label> "Hallo Welt" _:N5293b62f2cd84561bd1720f64e54a23a .
-
+<http://localhost:5000/example> <http://predicate> "Hallo Welt, ich bin im Default-Graph" .
+<http://localhost:5000/example> <http://predicate> "Hallo Welt, ich bin im Named-Graph" <http://localhost:5000/example> .

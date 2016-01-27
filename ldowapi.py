@@ -9,12 +9,12 @@ import argparse
 import os, hashlib, time, json
 
 # TODO: jquery ajax requests always get a 'charset=UTF-8' entry as Content-Type
-importformats = {'text/html' : 'html',
-        'text/n3':'n3',
+importformats = {'text/n3':'n3',
         'application/n-triples':'nquads',
         'application/n-triples; charset=UTF-8':'nquads',
         'application/n-quads':'nquads',
         'application/n-quads; charset=UTF-8':'nquads',
+        'text/plain':'nt',
         'text/plain; charset=UTF-8':'nt',
         'application/turtle':'turtle',
         'application/rdf+xml':'rdf'
@@ -22,8 +22,16 @@ importformats = {'text/html' : 'html',
 
 exportformats = {
         'application/n-quads':'nquads',
-        #'text/plain':'nt',
+        'text/plain':'nt',
+        'application/n-triples':'nt',
+        'application/rdf+xml':'xml',
     }
+
+mimetypes = {
+        'nquads':'applcation/n-quads',
+        'xml':'applcation/rdf+xml',
+        'nt':'applcation/n-triples',
+}
 
 # command line parameters
 parser = argparse.ArgumentParser()
@@ -71,11 +79,32 @@ def __resourceexists(resourceuri):
 
     return bool(result)
 
+def __objectexists(objecturi):
+    query = ' ASK { ?s ?p <' + resourceuri + '> . } '
+    result = g.query(query)
+
+    return bool(result)
+
 def __resourceisgraphuri(resourceuri):
     query = ' ASK {graph <' + resourceuri + '> { ?s ?p ?o } } '
     result = g.query(query)
 
     return bool(result)
+
+def __serialize(data, serialization):
+    if serialization == 'nt' or serialization == 'nquads':
+        return(data)
+
+    plain = ''
+    for line in data:
+        plain+= line
+
+    g = rdflib.Graph()
+    g.parse(data=plain, format='nt')
+
+    data = g.serialize(format=serialization)
+
+    return(data)
 
 '''
 API
@@ -88,7 +117,6 @@ def index(path):
     List last commits.
     '''
     url                = request.url
-    print('URL', url)
     resourceisgraphuri = __resourceisgraphuri(url)
     resourceexists     = __resourceexists(url)
 
@@ -121,26 +149,32 @@ def index(path):
         return resp
 
     elif request.method == 'GET':
-        #
-        print('GET empfangen')
-        if resourceisgraphuri and resourceexists:
-            print('Resource existiert und ein Graph ebenfalls')
-            data = g.dumpgraph(url)
-            data+= g.getresource(url)
-            data+= g.getobject(url)
-            resp = Response(data, status=200, mimetype='application/n-quads')
-        elif resourceisgraphuri:
-            print('Resource ist Graph, dumpe ganzen Graph')
-            data = g.dumpgraph(request.url)
-            resp = Response(data, status=200, mimetype='application/n-quads')
-        elif resourceexists:
-            print('Resource ' + request.url + ' gefunden, hier kommt sie')
-            data = g.getresource(request.url)
-            resp = Response(data, status=200, mimetype='application/n-quads')
+        if request.environ['HTTP_ACCEPT'] not in exportformats:
+            serialization = 'nt'
         else:
-            print('Resource ' + request.url + ' nicht gefunden')
-            resp = Response(status=404)
+            serialization = exportformats[request.environ['HTTP_ACCEPT']]
 
+        data = []
+        if resourceisgraphuri and resourceexists:
+            print('Graph = Resource = URL')
+            data+= g.dumpgraph(url, serialization)
+            data+= g.getresource(url, serialization)
+            data+= g.getobject(url, serialization)
+        elif resourceisgraphuri:
+            print('Graph = URL')
+            data+= g.dumpgraph(request.url, serialization)
+        elif resourceexists:
+            print('Resource = URL')
+            data+= g.getresource(request.url)
+            data+= g.getobject(url, serialization)
+        else:
+            resp = Response(status=404)
+            return resp
+
+        # deduplicate and serialize
+        data = __serialize(list(set(data)), serialization)
+
+        resp = Response(data, status=200, mimetype=mimetypes[serialization])
         return resp
 
 
@@ -155,7 +189,7 @@ def getnextresourceuri():
         urihash = m.hexdigest()[:32]
         print(urihash)
         resource = request.url_root + urihash
-        if __resourceexists(resource) == False:
+        if __resourceexists(resource) == False and __objectexists(resour) == False:
             data = ('url', dn)
             resp = Response(json.dumps({'nexthash':urihash, 'nexturl':resource}), status=200, mimetype='application/json')
             return resp

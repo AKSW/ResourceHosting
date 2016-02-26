@@ -29,6 +29,12 @@ class FileGraph:
                 data.append(quad[0].n3() + ' ' + quad[1].n3() + ' ' + quad[2].n3() + ' ' + graph + ' .\n')
         return data
 
+    def serializetriples(self, triples):
+        data = []
+        for triple in triples:
+            data.append(triple[0].n3() + ' ' + quad[1].n3() + ' ' + quad[2].n3() + ' .\n')
+        return data
+
     def addstatement(self, statement, rdfserialization):
         data = statement.decode('UTF-8')
         self.graph.parse(data=data, format=rdfserialization)
@@ -49,14 +55,29 @@ class FileGraph:
         return self.graph.context()
 
     def getresource(self, subjecturi, serialization):
-        subject = rdflib.term.URIRef(subjecturi)
+        # check if subject is BNode
+        if subjecturi.startswith('_:', 0, 2):
+            subject = rdflib.BNode(subjecturi[2:])
+        else:
+            subject = rdflib.term.URIRef(subjecturi)
+
+        # get the quads
         triples = self.graph.quads((subject, None, None, None))
+
         data = []
+
         if serialization == 'nquads':
             data+= self.serializequads(triples)
         else:
-            for triple in triples:
-                data.append(triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n')
+            data+= self.serializetriples(triples)
+
+        # get them again
+        triples = self.graph.quads((subject, None, None, None))
+        for triple in triples:
+            test = triple[2].n3().strip('[]')
+            if test.startswith('_:', 0, 2):
+                data+=self.getresource(test, serialization)
+
         return data
 
     def getobject(self, objecturi, serialization):

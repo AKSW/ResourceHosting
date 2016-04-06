@@ -32,7 +32,7 @@ class FileGraph:
     def serializetriples(self, triples):
         data = []
         for triple in triples:
-            data.append(triple[0].n3() + ' ' + quad[1].n3() + ' ' + quad[2].n3() + ' .\n')
+            data.append(triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n')
         return data
 
     def addstatement(self, statement, rdfserialization):

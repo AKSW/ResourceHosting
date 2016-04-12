@@ -2,6 +2,7 @@ import rdflib
 from rdflib.plugins.parsers.nquads import NQuadsParser
 import os
 import sys
+import random
 
 class FileGraph:
     def __init__(self, graphfile, rdfserialization='nquads', defaultgraphuri='http://localhost:5000/default'):
@@ -37,16 +38,48 @@ class FileGraph:
 
     def addstatement(self, statement, rdfserialization):
         data = statement.decode('UTF-8')
-        self.graph.parse(data=data, format=rdfserialization)
+        self.tempgraph = rdflib.graph.ConjunctiveGraph()
+        self.tempgraph.parse(data=data, format=rdfserialization)
+        quads = self.tempgraph.quads((None, None, None, None))
+        bnodes = {}
+        newdata = ''
+
+        # rdflib will reidentify blanknodes during a sessions
+        # a parsed BNode '_:a' will always get the same hash from rdflib
+        # this is a quick workaround
+        for quad in quads:
+            subject = quad[0].n3().strip('[]')
+            if subject.startswith('_:', 0, 2):
+                if subject not in bnodes:
+                    bnodes[subject] = '_:' + str(random.getrandbits(128))
+                subject = bnodes[subject]
+            else:
+                subject = quad[0].n3()
+            object = quad[2].n3().strip('[]')
+            if object.startswith('_:', 0, 2):
+                if object not in bnodes:
+                    bnodes[object] = '_:' + str(random.getrandbits(128))
+                object = bnodes[object]
+            else:
+                object = quad[0].n3()
+            graph = quad[3].n3().strip('[]')
+            if graph.startswith('_:', 0, 2):
+                newdata += subject + ' ' + quad[1].n3() + ' ' + object + ' .\n'
+            else:
+                newdata += subject + ' ' + quad[1].n3() + ' ' + object + ' ' + graph + ' .\n'
+                data.append(quad[0].n3() + ' ' + quad[1].n3() + ' ' + quad[2].n3() + ' ' + graph + ' .\n')
+
+        self.graph.parse(data=newdata, format='nquads')
+        g = None
         return
 
     def triplestest(self, resource):
         return self.graph.context_id(resource)
 
     def savefile(self, path):
-        f = open(path, "w")
+        f = open(path, 'w')
 
-        self.content = self.graph.serialize(format="nquads")
+        self.content = self.graph.serialize(format='nquads')
 
         f.write( self.content.decode('UTF-8'))
         f.close

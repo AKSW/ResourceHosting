@@ -99,25 +99,29 @@ class FileGraph:
 
         # get the quads
         quads = self.graph.quads((subject, None, None, None))
+
+        # used to keep track of BNodes at object position
+        bnodes = []
+
         if serialization == 'nquads':
             for quad in quads:
+                if isinstance(quad[2], rdflib.BNode):
+                    bnodes.append(quad[2].n3().strip['[]'])
+
                 temp.add((quad[0], quad[1], quad[2], quad[3]))
         else:
             for quad in quads:
+                if isinstance(quad[2], rdflib.BNode):
+                    bnodes.append(quad[2].n3().strip('[]'))
+
                 temp.add((quad[0], quad[1], quad[2]))
 
-        # get them again
-        quads = self.graph.quads((subject, None, None, None))
-        if serialization == 'nquads':
-            for quad in quads:
-                temp.add((quad[0], quad[1], quad[2], quad[3]))
-        else:
-            for quad in quads:
-                temp.add((quad[0], quad[1], quad[2]))
+        # deduplicate
+        bnodes = list(set(bnodes))
 
-            test = quad[2].n3().strip('[]')
-            if test.startswith('_:', 0, 2):
-                temp = temp + self.getresource(test, serialization)
+        # add triples of BNodes
+        for bnode in bnodes:
+            temp = temp + self.getresource(bnode, serialization)
 
         return temp
 

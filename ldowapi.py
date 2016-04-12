@@ -91,21 +91,6 @@ def __resourceisgraphuri(resourceuri):
 
     return bool(result)
 
-def __serialize(data, serialization):
-    if serialization == 'nt' or serialization == 'nquads':
-        return(data)
-
-    plain = ''
-    for line in data:
-        plain+= line
-
-    g = rdflib.Graph()
-    g.parse(data=plain, format='nt')
-
-    data = g.serialize(format=serialization)
-
-    return(data)
-
 '''
 API
 '''
@@ -154,27 +139,34 @@ def index(path):
         else:
             serialization = exportformats[request.environ['HTTP_ACCEPT']]
 
-        data = []
+        if serialization == 'nquads':
+            temp = rdflib.graph.ConjunctiveGraph()
+        else:
+            temp = rdflib.graph.Graph()
+
         if resourceisgraphuri and resourceexists:
             print('Graph = Resource = URL')
-            data+= g.dumpgraph(url, serialization)
-            data+= g.getresource(url, serialization)
-            data+= g.getobject(url, serialization)
+            temp+= g.dumpgraph(url, serialization)
+            temp+= g.getresource(url, serialization)
+            temp+= g.getobject(url, serialization)
         elif resourceisgraphuri:
             print('Graph = URL')
-            data+= g.dumpgraph(url, serialization)
+            temp+= g.dumpgraph(url, serialization)
         elif resourceexists:
             print('Resource = URL')
-            data+= g.getresource(url, serialization)
-            data+= g.getobject(url, serialization)
+            temp+= g.getresource(url, serialization)
+            temp+= g.getobject(url, serialization)
         else:
             resp = Response(status=404)
             return resp
 
-        # deduplicate and serialize
-        data = __serialize(list(set(data)), serialization)
+        # serialize
+        data = temp.serialize(format=serialization)
+        data = data.decode('UTF-8')
 
         resp = Response(data, status=200, mimetype=mimetypes[serialization])
+        temp = None
+
         return resp
 
 

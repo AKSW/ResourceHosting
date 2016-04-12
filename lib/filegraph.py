@@ -77,13 +77,20 @@ class FileGraph:
 
         self.content = self.graph.serialize(format='nquads')
 
-        f.write( self.content.decode('UTF-8'))
+        f.write(self.content.decode('UTF-8'))
         f.close
+
+        return
 
     def getcontexts(self):
         return self.graph.context()
 
     def getresource(self, subjecturi, serialization):
+        if serialization == 'nquads':
+            temp = rdflib.graph.ConjunctiveGraph()
+        else:
+            temp = rdflib.graph.Graph()
+
         # check if subject is BNode
         if subjecturi.startswith('_:', 0, 2):
             subject = rdflib.BNode(subjecturi[2:])
@@ -91,45 +98,64 @@ class FileGraph:
             subject = rdflib.term.URIRef(subjecturi)
 
         # get the quads
-        triples = self.graph.quads((subject, None, None, None))
-
-        data = []
-
+        quads = self.graph.quads((subject, None, None, None))
         if serialization == 'nquads':
-            data+= self.serializequads(triples)
+            for quad in quads:
+                temp.add((quad[0], quad[1], quad[2], quad[3]))
         else:
-            data+= self.serializetriples(triples)
+            for quad in quads:
+                temp.add((quad[0], quad[1], quad[2]))
 
         # get them again
-        triples = self.graph.quads((subject, None, None, None))
-        for triple in triples:
-            test = triple[2].n3().strip('[]')
-            if test.startswith('_:', 0, 2):
-                data+=self.getresource(test, serialization)
+        quads = self.graph.quads((subject, None, None, None))
+        if serialization == 'nquads':
+            for quad in quads:
+                temp.add((quad[0], quad[1], quad[2], quad[3]))
+        else:
+            for quad in quads:
+                temp.add((quad[0], quad[1], quad[2]))
 
-        return data
+            test = quad[2].n3().strip('[]')
+            if test.startswith('_:', 0, 2):
+                temp = temp + self.getresource(test, serialization)
+
+        return temp
 
     def getobject(self, objecturi, serialization):
         object = rdflib.term.URIRef(objecturi)
-        triples = self.graph.quads((None, None, object, None))
-        data = []
+
         if serialization == 'nquads':
-            data+= self.serializequads(triples)
+            temp = rdflib.graph.ConjunctiveGraph()
         else:
-            for triple in triples:
-                data.append(triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n')
-        return data
+            temp = rdflib.graph.Graph()
+
+        quads = self.graph.quads((None, None, object, None))
+
+        if serialization == 'nquads':
+            for quad in quads:
+                temp.add((quad[0], quad[1], quad[2], quad[3]))
+        else:
+            for quad in quads:
+                temp.add((quad[0], quad[1], quad[2]))
+
+        return temp
 
     def dumpgraph(self, graphuri, serialization):
         graph = rdflib.term.URIRef(graphuri)
-        triples = self.graph.quads((None, None, None, graphuri))
+
+        if serialization == 'nquads':
+            temp = rdflib.graph.ConjunctiveGraph()
+        else:
+            temp = rdflib.graph.Graph()
+
+        quads = self.graph.quads((None, None, None, graphuri))
         data = []
-        for triple in triples:
+        for quad in quads:
             if serialization == 'nquads':
-                data.append(triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' <' + graphuri + '> .\n')
+                temp.add((quad[0], quad[1], quad[2], quad[3]))
             else:
-                data.append(triple[0].n3() + ' ' + triple[1].n3() + ' ' + triple[2].n3() + ' .\n')
-        return data
+                temp.add((quad[0], quad[1], quad[2]))
+        return temp
 
     def query(self, querystring, context='default'):
         if context == 'default':

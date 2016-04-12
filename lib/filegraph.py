@@ -48,27 +48,24 @@ class FileGraph:
         # a parsed BNode '_:a' will always get the same hash from rdflib
         # this is a quick workaround
         for quad in quads:
-            subject = quad[0].n3().strip('[]')
-            if subject.startswith('_:', 0, 2):
-                if subject not in bnodes:
-                    bnodes[subject] = '_:' + str(random.getrandbits(128))
-                subject = bnodes[subject]
+            temp = quad[0].n3().strip('[]')
+            if temp.startswith('_:', 0, 2):
+                if temp not in bnodes:
+                    bnodes[temp] = str(random.getrandbits(128))
+                subject = rdflib.BNode(bnodes[temp])
             else:
-                subject = quad[0].n3()
-            object = quad[2].n3().strip('[]')
-            if object.startswith('_:', 0, 2):
-                if object not in bnodes:
-                    bnodes[object] = '_:' + str(random.getrandbits(128))
-                object = bnodes[object]
-            else:
-                object = quad[2].n3()
-            graph = quad[3].n3().strip('[]')
-            if graph.startswith('_:', 0, 2):
-                newdata += subject + ' ' + quad[1].n3() + ' ' + object + ' .\n'
-            else:
-                newdata += subject + ' ' + quad[1].n3() + ' ' + object + ' ' + graph + ' .\n'
+                subject = quad[0]
 
-        self.graph.parse(data=newdata, format='nquads')
+            temp = quad[2].n3().strip('[]')
+            if temp.startswith('_:', 0, 2):
+                if temp not in bnodes:
+                    bnodes[temp] = str(random.getrandbits(128))
+                object = rdflib.BNode(bnodes[temp])
+            else:
+                object = quad[2]
+
+            self.graph.add((subject, quad[1], object, quad[3]))
+
         g = None
         return
 

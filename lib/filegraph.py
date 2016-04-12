@@ -61,13 +61,12 @@ class FileGraph:
                     bnodes[object] = '_:' + str(random.getrandbits(128))
                 object = bnodes[object]
             else:
-                object = quad[0].n3()
+                object = quad[2].n3()
             graph = quad[3].n3().strip('[]')
             if graph.startswith('_:', 0, 2):
                 newdata += subject + ' ' + quad[1].n3() + ' ' + object + ' .\n'
             else:
                 newdata += subject + ' ' + quad[1].n3() + ' ' + object + ' ' + graph + ' .\n'
-                data.append(quad[0].n3() + ' ' + quad[1].n3() + ' ' + quad[2].n3() + ' ' + graph + ' .\n')
 
         self.graph.parse(data=newdata, format='nquads')
         g = None

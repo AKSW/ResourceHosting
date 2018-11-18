@@ -16,7 +16,7 @@ importformats = {'text/n3':'n3',
         'application/n-quads; charset=UTF-8':'nquads',
         'text/plain':'nt',
         'text/plain; charset=UTF-8':'nt',
-        'application/turtle':'turtle',
+        'text/turtle':'turtle',
         'application/rdf+xml':'rdf'
     }
 

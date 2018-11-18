@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 from flask import request, Flask, Response
-from flask_negotiate import consumes, produces
-from flask.ext.cors import CORS
+from flask_cors import CORS
 import lib.filegraph as fg
 import rdflib
-from  lib import handleexit
+from lib import handleexit
 import argparse
 import os, hashlib, time, json
 

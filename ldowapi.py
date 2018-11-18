@@ -108,20 +108,20 @@ def index(path):
     if request.method == 'POST' or request.method == 'PUT':
         # we have to write data
         if request.environ['CONTENT_TYPE'] not in importformats:
-            print('Content-Type ' + request.environ + ' not supported')
-            resp = Response(status=404)
+            responseText = 'Content-Type {} not supported'.format(request.environ['CONTENT_TYPE'])
+            resp = Response(responseText, status=415)
             return resp
 
         # but not if the resource already exists
         if resourceexists:
-            print('Could not insert data. Resource \"' + request.url + '\" allready exists.')
-            resp = Response(status=404)
+            responseText = 'Could not insert data. Resource \"{}\" allready exists.'.format(request.url)
+            resp = Response(responseText, status=409)
             return resp
 
         # and if the resource already exists as a graph
         if resourceisgraphuri:
-            print('Could not insert data. A graph with URI \"' + request.url + '\" allready exists.')
-            resp = Response(status=404)
+            responseText = 'Could not insert data. A graph with URI \"{}\" allready exists.'.format(request.url)
+            resp = Response(responseText, status=409)
             return resp
 
         # write

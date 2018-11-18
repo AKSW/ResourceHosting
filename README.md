@@ -30,7 +30,7 @@ or
 http://your.host/existing/graphuri
 ```
 
-# Install python environtment
+# Install python environment
 
 Install [pip](https://pypi.python.org/pypi/pip/) to be able to do the following:
 ```

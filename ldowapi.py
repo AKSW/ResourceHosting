@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from flask import request, Flask, Response
 from flask_cors import CORS
 import lib.filegraph as fg

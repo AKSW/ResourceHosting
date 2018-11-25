@@ -1,40 +1,27 @@
-FROM ubuntu:latest
+FROM python:3
 
-MAINTAINER Norman Radtke <radtke@informatik.uni-leipzig.de>
+LABEL maintainer="Norman Radtke <radtke@informatik.uni-leipzig.de>, Natanael Arndt <arndtn@gmail.com>"
 
 ENV DEBIAN_FRONTEND noninteractive
 
-# http://jaredmarkell.com/docker-and-locales/
-RUN locale-gen en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+RUN useradd -md /usr/src/app flask
+USER flask
+WORKDIR /usr/src/app
 
-# update ubuntu as well as install python3
-RUN apt-get update && \
-    apt-get -y upgrade && \
-    apt-get install -qy python3 python3-pip && \
-    apt-get clean
-RUN ln -s /usr/bin/python3 /usr/bin/python
-RUN ln -s /usr/bin/pip3 /usr/bin/pip
+COPY lib/ /usr/src/app/lib
+COPY ldowapi.py /usr/src/app/
+COPY requirements.txt /usr/src/app/
 
+USER root
+RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir uwsgi
 
-ENV LDOW_HOME /opt/ldow
-RUN mkdir $LDOW_HOME
-WORKDIR $LDOW_HOME
-COPY ldowapi.py $LDOW_HOME/ldowapi.py
-RUN chmod +x $LDOW_HOME/ldowapi.py
-COPY requirements.txt $LDOW_HOME/requirements.txt
-COPY lib $LDOW_HOME/lib
-RUN pip install -r requirements.txt
-RUN ln -s $LDOW_HOME/ldowapi.py /usr/local/bin/ldowapi
+ENV GRAPH_FILE /data/graph.nq
+ENV GRAPH_SERIALIZATION nquads
 
 RUN mkdir /data
-COPY start.nq /data/graph.nq
+COPY start.nq $GRAPH_FILE
+RUN chown flask $GRAPH_FILE
 
 VOLUME /data
-EXPOSE 80
-
-ENV RDF_SER nquads
-ENV GRAPH_FILE /data/graph.nq
-CMD /opt/ldow/ldowapi.py $GRAPH_FILE --input $RDF_SER --port 80 --host 0.0.0.0
+EXPOSE 8080
+CMD uwsgi --http 0.0.0.0:8080 --module ldowapi --callable app --pyargv "$GRAPH_FILE --input $GRAPH_SERIALIZATIO"

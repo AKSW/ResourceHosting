@@ -24,4 +24,4 @@ RUN chown flask $GRAPH_FILE
 
 VOLUME /data
 EXPOSE 8080
-CMD uwsgi --http 0.0.0.0:8080 --module ldowapi --callable app --pyargv "$GRAPH_FILE --input $GRAPH_SERIALIZATIO"
+CMD uwsgi --http 0.0.0.0:8080 --module ldowapi --callable app --pyargv "$GRAPH_FILE --input $GRAPH_SERIALIZATION"
